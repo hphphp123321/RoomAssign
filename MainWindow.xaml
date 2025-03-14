@@ -1,90 +1,152 @@
 ﻿<Window x:Class="RoomAssign.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="抢房好好好" Height="750" Width="700">
+        Title="抢房好好好——By hp" Height="750" Width="800"
+        Icon="house.ico"
+        >
     <Grid Margin="10">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>  <!-- 输入区域 -->
-            <RowDefinition Height="Auto"/>  <!-- 社区条件 -->
-            <RowDefinition Height="*"/>     <!-- 日志输出 -->
-            <RowDefinition Height="Auto"/>  <!-- 操作按钮 -->
+            <RowDefinition Height="Auto" />  <!-- 运行模式选择 -->
+            <RowDefinition Height="Auto" />  <!-- 输入区域 -->
+            <RowDefinition Height="Auto" />  <!-- 社区条件 -->
+            <RowDefinition Height="*" />     <!-- 日志输出 -->
+            <RowDefinition Height="Auto" />  <!-- 操作按钮 -->
         </Grid.RowDefinitions>
-        
+
+        <!-- 运行模式选择区域 -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+            <Label Content="运行模式:" Width="80" />
+            <ComboBox x:Name="OperationModeComboBox" Width="250"
+                      ToolTip="模拟点击模式可以看到具体的操作，在最后一步确认需要手动点击，成功率较高，但是速度较发包模式慢；发包模式理论速度最快，但是需要cookie，并且不保证成功率">
+                <ComboBoxItem Content="模拟点击" IsSelected="True" />
+                <ComboBoxItem Content="Http发包" />
+            </ComboBox>
+            <!-- 圆形问号图标，带 ToolTip -->
+            <Border Width="20" Height="20" CornerRadius="10" Background="LightGray" Margin="5,0,0,0">
+                <TextBlock Text="?" HorizontalAlignment="Center" VerticalAlignment="Center"
+                           ToolTip="模拟点击模式可以看到具体的操作，在最后一步确认需要手动点击，成功率较高，但是速度较发包模式慢；发包模式理论速度最快，但是需要cookie，并且不保证成功率"
+                           FontWeight="Bold" />
+            </Border>
+        </StackPanel>
+
         <!-- 输入参数区域 -->
-        <StackPanel Grid.Row="0" Orientation="Vertical" Margin="0,0,0,10">
+        <StackPanel Grid.Row="1" Orientation="Vertical" Margin="0,0,0,10">
             <!-- 浏览器选择 -->
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5" VerticalAlignment="Center">
-                <Label Content="选择浏览器:" Width="80"/>
+                <Label Content="选择浏览器:" Width="80" />
                 <ComboBox x:Name="BrowserComboBox" Width="150">
-                    <ComboBoxItem Content="Edge" IsSelected="True"/>
-                    <ComboBoxItem Content="Chrome"/>
+                    <ComboBox.Style>
+                        <Style TargetType="ComboBox">
+                            <Setter Property="IsEnabled" Value="True" />
+                            <Style.Triggers>
+                                <!-- 当选中 Http 发包模式时，禁用浏览器选择 -->
+                                <DataTrigger Binding="{Binding SelectedIndex, ElementName=OperationModeComboBox}"
+                                             Value="1">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ComboBox.Style>
+                    <ComboBoxItem Content="Edge" IsSelected="True" />
+                    <ComboBoxItem Content="Chrome" />
                 </ComboBox>
             </StackPanel>
-            
+
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <Label Content="用户账号:" Width="80"/>
-                <TextBox x:Name="AccountTextBox" Width="500" Text="91310118832628001D"/>
+                <Label Content="用户账号:" Width="80" />
+                <TextBox x:Name="AccountTextBox" Width="500" Text="91310118832628001D" ToolTip="请输入用户账号">
+                    <TextBox.Style>
+                        <Style TargetType="TextBox">
+                            <Setter Property="IsEnabled" Value="True" />
+                            <Style.Triggers>
+                                <!-- Http 模式下禁用账号输入 -->
+                                <DataTrigger Binding="{Binding SelectedIndex, ElementName=OperationModeComboBox}"
+                                             Value="1">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBox.Style>
+                </TextBox>
             </StackPanel>
+
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <Label Content="用户密码:" Width="80"/>
-                <PasswordBox x:Name="PasswordBox" Width="500" Password="111111"/>
+                <Label Content="用户密码:" Width="80" />
+                <PasswordBox x:Name="PasswordBox" Width="500" Password="111111" ToolTip="请输入用户密码">
+                    <PasswordBox.Style>
+                        <Style TargetType="PasswordBox">
+                            <Setter Property="IsEnabled" Value="True" />
+                            <Style.Triggers>
+                                <!-- Http 模式下禁用密码输入 -->
+                                <DataTrigger Binding="{Binding SelectedIndex, ElementName=OperationModeComboBox}"
+                                             Value="1">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </PasswordBox.Style>
+                </PasswordBox>
             </StackPanel>
+
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5" VerticalAlignment="Center">
-                <Label Content="Cookie:" Width="80"/>
-                <TextBox x:Name="CookieTextBox" Width="500" Text="SYS_USER_COOKIE_KEY=P+cz/oIvqbSUe779y6qP5KqXV18nIIr1rwjHy62GAaO+03VEWXU8gg=="/>
+                <Label Content="Cookie:" Width="80" />
+                <TextBox x:Name="CookieTextBox" Width="500" Text="" ToolTip="请输入Cookie (Http发包模式必填)" />
                 <!-- 圆形问号图标，带 ToolTip -->
                 <Border Width="20" Height="20" CornerRadius="10" Background="LightGray" Margin="5,0,0,0">
-                    <TextBlock Text="?" HorizontalAlignment="Center" VerticalAlignment="Center" 
-                               ToolTip="如果填写了cookie不用填账号密码，cookie是为了简化登录流程" FontWeight="Bold"/>
+                    <TextBlock Text="?" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               ToolTip="如果填写了cookie不用填账号密码，cookie是为了简化登录流程" FontWeight="Bold" />
                 </Border>
             </StackPanel>
+
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <Label Content="申请人姓名:" Width="80"/>
-                <TextBox x:Name="ApplyerTextBox" Width="500" Text="吴雨"/>
+                <Label Content="申请人姓名:" Width="80" />
+                <TextBox x:Name="ApplyerTextBox" Width="500" Text="" ToolTip="请输入申请人姓名" />
             </StackPanel>
+
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <Label Content="开始日期:" Width="80"/>
-                <DatePicker x:Name="StartDatePicker" SelectedDate="2025-03-18" Width="150"/>
-                <Label Content="时间:" Margin="10,0,0,0"/>
-                <TextBox x:Name="HourTextBox" Width="30" Text="09"/>
-                <TextBlock Text=":" VerticalAlignment="Center" Margin="2,0"/>
-                <TextBox x:Name="MinuteTextBox" Width="30" Text="00"/>
-                <TextBlock Text=":" VerticalAlignment="Center" Margin="2,0"/>
-                <TextBox x:Name="SecondTextBox" Width="30" Text="00"/>
+                <Label Content="开始日期:" Width="80" />
+                <DatePicker x:Name="StartDatePicker" SelectedDate="2025-03-17" Width="150" />
+                <Label Content="时间:" Margin="10,0,0,0" />
+                <TextBox x:Name="HourTextBox" Width="30" Text="09" />
+                <TextBlock Text=":" VerticalAlignment="Center" Margin="2,0" />
+                <TextBox x:Name="MinuteTextBox" Width="30" Text="00" />
+                <TextBlock Text=":" VerticalAlignment="Center" Margin="2,0" />
+                <TextBox x:Name="SecondTextBox" Width="30" Text="00" />
             </StackPanel>
-            
+
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <Label Content="点击触发间隔(ms):" Width="120"/>
-                <TextBox x:Name="ClickIntervalTextBox" Width="100" Text="200"/>
+                <Label Content="触发间隔(ms):" Width="120" />
+                <TextBox x:Name="ClickIntervalTextBox" Width="100" Text="200" />
             </StackPanel>
         </StackPanel>
-        
+
         <!-- 社区条件动态输入区域 -->
-        <GroupBox Grid.Row="1" Margin="0,0,0,10">
+        <!-- 注意：请在代码中清空默认添加的社区条件，保证界面显示为空，提示用户自行添加 -->
+        <GroupBox Grid.Row="2" Margin="0,0,0,10">
             <GroupBox.Header>
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="社区条件" FontWeight="Bold"/>
+                    <TextBlock Text="社区条件" FontWeight="Bold" />
                     <!-- 圆形问号图标 -->
                     <Border Width="20" Height="20" CornerRadius="10" Background="LightGray" Margin="5,0,0,0">
-                        <TextBlock Text="?" HorizontalAlignment="Center" VerticalAlignment="Center" 
-                                   ToolTip="小区为必填，其他如果填0则默认为不筛选" FontWeight="Bold"/>
+                        <TextBlock Text="?" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   ToolTip="小区为必填，其他如果填0则默认为不筛选" FontWeight="Bold" />
                     </Border>
                 </StackPanel>
             </GroupBox.Header>
             <DockPanel>
-                <Button Content="+添加条件" DockPanel.Dock="Bottom" Click="AddCommunity_Click" Margin="5" Width="100"/>
-                <DataGrid x:Name="CommunityDataGrid" AutoGenerateColumns="False" CanUserAddRows="False" 
+                <Button Content="+添加条件" DockPanel.Dock="Bottom" Click="AddCommunity_Click" Margin="5" Width="100" />
+                <DataGrid x:Name="CommunityDataGrid" AutoGenerateColumns="False" CanUserAddRows="False"
                           CanUserSortColumns="False" Margin="5">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="小区" Binding="{Binding CommunityName}" Width="*"/>
-                        <DataGridTextColumn Header="幢号" Binding="{Binding BuildingNo}" Width="Auto"/>
-                        <DataGridTextColumn Header="层数" Binding="{Binding FloorNo}" Width="Auto"/>
-                        <DataGridTextColumn Header="最高价格(元/月)" Binding="{Binding MaxPrice}" Width="Auto"/>
-                        <DataGridTextColumn Header="最小面积(m^2)" Binding="{Binding LeastArea}" Width="Auto"/>
+                        <DataGridTextColumn Header="小区" Binding="{Binding CommunityName}" Width="*" />
+                        <DataGridTextColumn Header="幢号" Binding="{Binding BuildingNo}" Width="Auto" />
+                        <DataGridTextColumn Header="层数" Binding="{Binding FloorNo}" Width="Auto" />
+                        <DataGridTextColumn Header="最高价格(元/月)" Binding="{Binding MaxPrice}" Width="Auto" />
+                        <DataGridTextColumn Header="最小面积(m^2)" Binding="{Binding LeastArea}" Width="Auto" />
                         <DataGridTemplateColumn Header="操作" Width="Auto">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Button Content="删除" Click="DeleteCommunity_Click" Tag="{Binding}"/>
+                                    <Button Content="删除" Click="DeleteCommunity_Click" Tag="{Binding}" />
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
@@ -92,16 +154,17 @@
                 </DataGrid>
             </DockPanel>
         </GroupBox>
-        
+
         <!-- 日志输出区域 -->
-        <TextBox x:Name="LogTextBox" Grid.Row="2" IsReadOnly="True" VerticalScrollBarVisibility="Auto" 
+        <TextBox x:Name="LogTextBox" Grid.Row="3" IsReadOnly="True" VerticalScrollBarVisibility="Auto"
                  TextWrapping="Wrap" AcceptsReturn="True"
                  FontFamily="Consolas" FontSize="16" />
-        
+
         <!-- 操作按钮区域 -->
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
-            <Button x:Name="StartButton" Content="开始抢房" Height="30" Width="100" Click="StartButton_Click" Margin="5"/>
-            <Button x:Name="StopButton" Content="停止抢房" Height="30" Width="100" Click="StopButton_Click" Margin="5" IsEnabled="False"/>
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+            <Button x:Name="StartButton" Content="开始抢房" Height="30" Width="100" Click="StartButton_Click" Margin="5" />
+            <Button x:Name="StopButton" Content="停止抢房" Height="30" Width="100" Click="StopButton_Click" Margin="5"
+                    IsEnabled="False" />
         </StackPanel>
     </Grid>
 </Window>

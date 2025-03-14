@@ -20,9 +20,8 @@ namespace RoomAssign
         {
             InitializeComponent();
             CommunityConditions = new ObservableCollection<HouseCondition>();
-            // 添加初始两行默认数据
+            // 添加初始一行默认数据
             CommunityConditions.Add(new HouseCondition("境秋华庭", 0, 0, 0, 0));
-            CommunityConditions.Add(new HouseCondition("境秋悦庭", 13, 4, 2500, 50));
             CommunityDataGrid.ItemsSource = CommunityConditions;
 
             // 将 Console 输出重定向到 LogTextBox 控件
@@ -47,6 +46,7 @@ namespace RoomAssign
             StartButton.IsEnabled = false;
             StopButton.IsEnabled = true;
             cts = new CancellationTokenSource();
+            var operationMode = ((ComboBoxItem)OperationModeComboBox.SelectedItem).Content.ToString();
             var userAccount = AccountTextBox.Text;
             var userPassword = PasswordBox.Password;
             var cookie = CookieTextBox.Text;
@@ -56,7 +56,7 @@ namespace RoomAssign
             var minute = MinuteTextBox.Text;
             var second = SecondTextBox.Text;
             var startTime = $"{date:yyyy-MM-dd} {hour}:{minute}:{second}";
-            
+
             // 读取点击触发间隔(ms)值
             if (!int.TryParse(ClickIntervalTextBox.Text, out int clickInterval))
             {
@@ -65,7 +65,7 @@ namespace RoomAssign
 
             var communityList = new List<HouseCondition>(CommunityConditions);
 
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
                 try
                 {
@@ -87,12 +87,13 @@ namespace RoomAssign
                     using (driver)
                     {
                         var selector = new HouseSelector(driver, clickInterval);
-                        selector.Run(
-                            userAccount: userAccount, 
-                            userPassword: userPassword, 
-                            applyerName: applyerName, 
-                            communityList: communityList, 
-                            startTime: startTime, 
+                        await selector.Run(
+                            mode: GetOperationMode(operationMode),
+                            userAccount: userAccount,
+                            userPassword: userPassword,
+                            applyerName: applyerName,
+                            communityList: communityList,
+                            startTime: startTime,
                             cancellationToken: cts.Token,
                             cookie: cookie);
                     }
@@ -134,6 +135,16 @@ namespace RoomAssign
                 StartButton.IsEnabled = true;
                 StopButton.IsEnabled = false;
             }
+        }
+
+        private OperationMode GetOperationMode(string mode)
+        {
+            return mode switch
+            {
+                "Http发包" => OperationMode.Http,
+                "模拟点击" => OperationMode.Click,
+                _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
+            };
         }
     }
 }

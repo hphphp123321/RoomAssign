@@ -14,22 +14,23 @@ namespace RoomAssign;
 public enum OperationMode
 {
     Click, // 模拟点击方式
-    Http   // 发包方式
+    Http // 发包方式
 }
 
-public class HouseSelector(IWebDriver driver, int clickIntervalMs=200)
+public class HouseSelector(IWebDriver driver, int clickIntervalMs = 200)
 {
     private void WaitUntilStartTime(string startTime, CancellationToken cancellationToken)
     {
         var start = DateTime.ParseExact(startTime, "yyyy-MM-dd HH:mm:ss", null);
-        
-        
+
+
         while (true)
         {
             if (cancellationToken.IsCancellationRequested)
             {
                 return;
             }
+
             var now = DateTime.Now;
             var remaining = start - now;
             if (remaining.TotalSeconds < 2)
@@ -244,10 +245,25 @@ public class HouseSelector(IWebDriver driver, int clickIntervalMs=200)
     }
 
     public async Task Run(string userAccount, string userPassword, string applyerName,
-                          List<HouseCondition> communityList,
-                          string startTime, CancellationToken cancellationToken,
-                          OperationMode mode, string cookie = null)
+        List<HouseCondition> communityList,
+        string startTime, CancellationToken cancellationToken,
+        OperationMode mode, string cookie = null)
     {
+        // 校验参数
+        if ((string.IsNullOrWhiteSpace(userAccount) || string.IsNullOrWhiteSpace(userPassword)) &&
+            string.IsNullOrWhiteSpace(cookie))
+        {
+            Console.WriteLine("用户名、密码和cookie不能为空");
+            return;
+        }
+
+
+        if (communityList.Count == 0)
+        {
+            Console.WriteLine("社区条件不能为空");
+            return;
+        }
+
         if (mode == OperationMode.Http)
         {
             // 发包模式必须传入 Cookie
@@ -257,75 +273,90 @@ public class HouseSelector(IWebDriver driver, int clickIntervalMs=200)
                 return;
             }
 
-            using var client = new HttpClient();
-            // 将 Cookie 添加到请求头
-            client.DefaultRequestHeaders.Add("Cookie", cookie);
-
-            // 1. 通过 GET 请求获取 https://ent.qpgzf.cn/RoomAssign/Index 页面并解析申请人ID
-            var applyerId = await GetApplyerId(client, applyerName);
-            if (applyerId == null)
-            {
-                Console.WriteLine("无法获取申请人ID，退出");
-                return;
-            }
-
-            
-
-            // 2. 等待至选房开始时间
-            WaitUntilStartTime(startTime, cancellationToken);
-            Console.WriteLine("发包选房开始！");
-            
-            // 3. 通过发包匹配获取房间ID
-            // 这里以 communityList 的第一个条件为示例
-            var condition = communityList[0];
-            var roomType = "一居室"; // TODO 先固定为一居室，后续可根据需求调整
-            var roomId = await GetRoomId(client, applyerId, condition.CommunityName, roomType);
-            if (roomId == null)
-            {
-                Console.WriteLine("无法获取匹配的房间ID，退出");
-                return;
-            }
-            
-            // TODO 定义发包时间窗口，例如选房开始后 10 秒内不断发包
-            var endTime = DateTime.ParseExact(startTime, "yyyy-MM-dd HH:mm:ss", null).AddSeconds(10);
-            while (DateTime.Now < endTime)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                    break;
-                await SelectRoomAsync(client, applyerId, roomId);
-                await Task.Delay(10, cancellationToken);
-            }
-            Console.WriteLine("发包流程完成");
+            await RunHttp(applyerName, communityList, startTime, cancellationToken, cookie);
         }
         else // 模拟点击方式
         {
-            Login(userAccount, userPassword, cookie);
-            NavigateToSelection(applyerName);
-            WaitUntilStartTime(startTime, cancellationToken);
-            if (cancellationToken.IsCancellationRequested)
-            {
-                Console.WriteLine("操作已取消，退出选房流程");
-                return;
-            }
-            Console.WriteLine("选房开始！");
-            StartAssignRoom();
-            SwitchToIframe();
-
-            foreach (var condition in communityList)
-            {
-                Console.WriteLine($"正在搜索 {condition.CommunityName}...");
-                SearchCommunity(condition.CommunityName);
-                Console.WriteLine($"开始选择 {condition.CommunityName} 的房源...");
-                var found = SelectBestHouse(condition);
-                if (found)
-                    break;
-            }
-
-            ConfirmSelection();
-            Console.WriteLine("选房流程完成");
-            Console.WriteLine("按任意键退出...");
-            Console.ReadKey();
+            RunClick(userAccount, userPassword, applyerName, communityList, startTime, cancellationToken, cookie);
         }
+    }
+
+    private async Task RunHttp(string applyerName,
+        List<HouseCondition> communityList,
+        string startTime, CancellationToken cancellationToken,
+        string cookie)
+    {
+        using var client = new HttpClient();
+        // 将 Cookie 添加到请求头
+        client.DefaultRequestHeaders.Add("Cookie", cookie);
+
+        // 1. 通过 GET 请求获取 https://ent.qpgzf.cn/RoomAssign/Index 页面并解析申请人ID
+        var applyerId = await GetApplyerId(client, applyerName);
+        if (applyerId == null)
+        {
+            Console.WriteLine("无法获取申请人ID，退出");
+            return;
+        }
+
+        // 2. 等待至选房开始时间
+        WaitUntilStartTime(startTime, cancellationToken);
+        Console.WriteLine("发包选房开始！");
+
+        // 3. 通过发包匹配获取房间ID
+        // 这里以 communityList 的第一个条件为示例
+        var condition = communityList[0];
+        var roomType = "一居室"; // TODO 先固定为一居室，后续可根据需求调整
+        var roomId = await GetRoomId(client, applyerId, condition.CommunityName, roomType);
+        if (roomId == null)
+        {
+            Console.WriteLine("无法获取匹配的房间ID，退出");
+            return;
+        }
+
+        // TODO 定义发包时间窗口，例如选房开始后 10 秒内不断发包
+        var endTime = DateTime.ParseExact(startTime, "yyyy-MM-dd HH:mm:ss", null).AddSeconds(10);
+        while (DateTime.Now < endTime)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                break;
+            await SelectRoomAsync(client, applyerId, roomId);
+            await Task.Delay(10, cancellationToken);
+        }
+
+        Console.WriteLine("发包流程完成");
+    }
+
+    private void RunClick(string userAccount, string userPassword, string applyerName,
+        List<HouseCondition> communityList,
+        string startTime, CancellationToken cancellationToken, string cookie = null)
+    {
+        Login(userAccount, userPassword, cookie);
+        NavigateToSelection(applyerName);
+        WaitUntilStartTime(startTime, cancellationToken);
+        if (cancellationToken.IsCancellationRequested)
+        {
+            Console.WriteLine("操作已取消，退出选房流程");
+            return;
+        }
+
+        Console.WriteLine("选房开始！");
+        StartAssignRoom();
+        SwitchToIframe();
+
+        foreach (var condition in communityList)
+        {
+            Console.WriteLine($"正在搜索 {condition.CommunityName}...");
+            SearchCommunity(condition.CommunityName);
+            Console.WriteLine($"开始选择 {condition.CommunityName} 的房源...");
+            var found = SelectBestHouse(condition);
+            if (found)
+                break;
+        }
+
+        ConfirmSelection();
+        Console.WriteLine("选房流程完成");
+        Console.WriteLine("按任意键退出...");
+        Console.ReadKey();
     }
 
     /// <summary>
@@ -338,7 +369,8 @@ public class HouseSelector(IWebDriver driver, int clickIntervalMs=200)
             var response = await client.GetAsync("https://ent.qpgzf.cn/RoomAssign/Index");
             var html = await response.Content.ReadAsStringAsync();
             // 正则匹配：通过 ondblclick 中的 show 函数参数获取申请人ID，同时匹配包含申请人名称的 <td>
-            var pattern = $"<tr\\s+ondblclick=\"javascript:show\\('([^']+)'\\);\">[\\s\\S]*?<td>\\s*{Regex.Escape(applyerName)}\\s*</td>";
+            var pattern =
+                $"<tr\\s+ondblclick=\"javascript:show\\('([^']+)'\\);\">[\\s\\S]*?<td>\\s*{Regex.Escape(applyerName)}\\s*</td>";
             var match = Regex.Match(html, pattern, RegexOptions.IgnoreCase);
             if (match.Success)
             {
@@ -382,7 +414,8 @@ public class HouseSelector(IWebDriver driver, int clickIntervalMs=200)
             var html = await response.Content.ReadAsStringAsync();
 
             // 正则匹配：查找包含指定社区名称和房型的房源行，提取 selectRooms 的第一个参数即房间ID
-            var pattern = $"<tr>[\\s\\S]*?selectRooms\\('([^']*)',[\\s\\S]*?{Regex.Escape(communityName)}[\\s\\S]*?{Regex.Escape(roomType)}[\\s\\S]*?</tr>";
+            var pattern =
+                $@"<tr>[\s\S]*?selectRooms\('([^']*)',[\s\S]*?{Regex.Escape(communityName)}[\s\S]*?{Regex.Escape(roomType)}[\s\S]*?</tr>";
             var match = Regex.Match(html, pattern, RegexOptions.IgnoreCase);
             if (match.Success)
             {
@@ -390,11 +423,9 @@ public class HouseSelector(IWebDriver driver, int clickIntervalMs=200)
                 Console.WriteLine($"获取到 {communityName} 最末房间ID：{roomId}");
                 return roomId;
             }
-            else
-            {
-                Console.WriteLine("未查询到匹配的房源信息...");
-                return null;
-            }
+
+            Console.WriteLine("未查询到匹配的房源信息...");
+            return null;
         }
         catch (Exception ex)
         {
@@ -408,7 +439,7 @@ public class HouseSelector(IWebDriver driver, int clickIntervalMs=200)
     /// </summary>
     private async Task SelectRoomAsync(HttpClient client, string applyerId, string roomId)
     {
-        string selectRoomUrl = "https://ent.qpgzf.cn/RoomAssign/AjaxSelectRoom";
+        var selectRoomUrl = "https://ent.qpgzf.cn/RoomAssign/AjaxSelectRoom";
         var data = new Dictionary<string, string>
         {
             { "ApplyIDs", applyerId },

@@ -2,10 +2,15 @@
 
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
+        <Version>1.0.0</Version>
+        <PackageId>RoomAssign</PackageId>
+        <Authors>Hp</Authors>
+        <Description>一个自动化抢租房软件</Description>
         <TargetFramework>net9.0-windows</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <UseWPF>true</UseWPF>
+        <ApplicationIcon>house.ico</ApplicationIcon>
     </PropertyGroup>
 
     <ItemGroup>
@@ -14,6 +19,15 @@
       <PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="133.0.6943.9800" />
       <PackageReference Include="Selenium.WebDriver.MSEdgeDriver" Version="131.0.2903.48" />
       <PackageReference Include="SeleniumExtras.WaitHelpers" Version="1.0.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Icon.png" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="house.ico" />
+      <Resource Include="house.ico" />
     </ItemGroup>
 
 </Project>
