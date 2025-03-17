@@ -14,7 +14,7 @@ namespace RoomAssign
     {
         public ObservableCollection<HouseCondition> CommunityConditions { get; set; }
         private CancellationTokenSource cts;
-        private IWebDriver driver;
+        private ISelector? Selector { get; set; }
 
         public MainWindow()
         {
@@ -46,7 +46,8 @@ namespace RoomAssign
             StartButton.IsEnabled = false;
             StopButton.IsEnabled = true;
             cts = new CancellationTokenSource();
-            var operationMode = ((ComboBoxItem)OperationModeComboBox.SelectedItem).Content.ToString();
+            var operationMode = GetOperationMode(((ComboBoxItem)OperationModeComboBox.SelectedItem).Content.ToString());
+            var driverType = GetDriverType(((ComboBoxItem)BrowserComboBox.SelectedItem).Content.ToString());
             var userAccount = AccountTextBox.Text;
             var userPassword = PasswordBox.Password;
             var cookie = CookieTextBox.Text;
@@ -69,33 +70,71 @@ namespace RoomAssign
             {
                 try
                 {
-                    Console.WriteLine("正在启动浏览器...");
-                    // 根据选择的浏览器创建相应的驱动
-                    Dispatcher.Invoke(() =>
+                    if (string.IsNullOrWhiteSpace(applyerName))
                     {
-                        var selectedBrowser = ((ComboBoxItem)BrowserComboBox.SelectedItem).Content.ToString();
-                        if (selectedBrowser == "Chrome")
-                        {
-                            driver = new ChromeDriver();
-                        }
-                        else
-                        {
-                            driver = new EdgeDriver();
-                        }
-                    });
-                    // 自动化流程（HouseSelector.Run 内部逻辑保持不变）
-                    using (driver)
+                        Console.WriteLine("申请人名称不能为空");
+                        return;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(startTime))
                     {
-                        var selector = new HouseSelector(driver, clickInterval);
-                        await selector.Run(
-                            mode: GetOperationMode(operationMode),
-                            userAccount: userAccount,
-                            userPassword: userPassword,
-                            applyerName: applyerName,
-                            communityList: communityList,
-                            startTime: startTime,
-                            cancellationToken: cts.Token,
-                            cookie: cookie);
+                        Console.WriteLine("选房开始时间不能为空");
+                        return;
+                    }
+
+                    if (communityList.Count == 0)
+                    {
+                        Console.WriteLine("社区条件不能为空");
+                        return;
+                    }
+
+                    switch (operationMode)
+                    {
+                        case OperationMode.Click:
+                            Console.WriteLine("正在启动浏览器...");
+                            // 根据选择的浏览器创建相应的驱动
+                            IWebDriver driver = null;
+                            Dispatcher.Invoke(() =>
+                            {
+                                driver = driverType switch
+                                {
+                                    DriverType.Chrome => new ChromeDriver(),
+                                    DriverType.Edge => new EdgeDriver(),
+                                    _ => throw new ArgumentOutOfRangeException()
+                                };
+                            });
+                            // 自动化流程（HouseSelector.Run 内部逻辑保持不变）
+                            using (driver)
+                            {
+                                Selector = new DriverSelector(
+                                    driver: driver,
+                                    userAccount: userAccount,
+                                    userPassword: userPassword,
+                                    applyerName: applyerName,
+                                    communityList: communityList,
+                                    startTime: startTime,
+                                    cancellationToken: cts.Token,
+                                    clickIntervalMs: clickInterval,
+                                    cookie: cookie);
+
+                                await Selector.RunAsync();
+                            }
+
+                            break;
+                        case OperationMode.Http:
+                            // 通过 Http 发包的方式进行自动化
+                            Selector = new HttpSelector(
+                                applyerName: applyerName,
+                                communityList: communityList,
+                                startTime: startTime,
+                                cancellationToken: cts.Token,
+                                clickIntervalMs: clickInterval,
+                                cookie: cookie);
+
+                            await Selector.RunAsync();
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
                     }
                 }
                 catch (Exception ex)
@@ -113,22 +152,19 @@ namespace RoomAssign
             }, cts.Token);
         }
 
+
         private void StopButton_Click(object sender, RoutedEventArgs e)
         {
             // 通过取消任务和退出浏览器来尝试停止自动化
             try
             {
                 cts?.Cancel();
-                if (driver != null)
-                {
-                    driver.Quit();
-                    driver = null;
-                    Console.WriteLine("已停止抢房。");
-                }
+                Selector?.Stop();
+                Console.WriteLine("已停止抢房。");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("停止抢房时出现错误: " + ex.Message);
+                Console.WriteLine("停止抢房时出现错误: " + ex.Message + ex.StackTrace);
             }
             finally
             {
@@ -144,6 +180,16 @@ namespace RoomAssign
                 "Http发包" => OperationMode.Http,
                 "模拟点击" => OperationMode.Click,
                 _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
+            };
+        }
+
+        private DriverType GetDriverType(string type)
+        {
+            return type switch
+            {
+                "Chrome" => DriverType.Chrome,
+                "Edge" => DriverType.Edge,
+                _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
             };
         }
     }
