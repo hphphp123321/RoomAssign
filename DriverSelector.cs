@@ -1,6 +1,8 @@
 ﻿using OpenQA.Selenium;
+using OpenQA.Selenium.DevTools.V130.Network;
 using OpenQA.Selenium.Support.UI;
 using SeleniumExtras.WaitHelpers;
+using Cookie = OpenQA.Selenium.Cookie;
 
 namespace RoomAssign;
 
@@ -12,6 +14,7 @@ public class DriverSelector(
     List<HouseCondition> communityList,
     string startTime,
     CancellationToken cancellationToken,
+    bool autoConfirm = false,
     int clickIntervalMs = 200,
     string cookie = null) : ISelector
 {
@@ -44,11 +47,19 @@ public class DriverSelector(
         var cookieSuccess = false;
         if (!string.IsNullOrEmpty(cookie))
         {
-            driver.Navigate().GoToUrl("https://ent.qpgzf.cn/CompanyHome/Main");
-            var seleniumCookie = new Cookie("SYS_USER_COOKIE_KEY", cookie);
+            var seleniumCookie = new Cookie(
+                name: "SYS_USER_COOKIE_KEY",
+                value: cookie,
+                domain: "ent.qpgzf.cn",
+                path: "/",
+                expiry: DateTime.Now.AddHours(10),
+                secure: false,
+                isHttpOnly: false,
+                sameSite: "Lax");
+            driver.Navigate().GoToUrl("https://ent.qpgzf.cn/");
             driver.Manage().Cookies.AddCookie(seleniumCookie);
-            driver.Navigate().Refresh();
-            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
+            driver.Navigate().GoToUrl("https://ent.qpgzf.cn/CompanyHome/Main");
+            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(3);
             try
             {
                 driver.FindElement(By.Id("mainCompany"));
@@ -68,7 +79,7 @@ public class DriverSelector(
         driver.FindElement(By.Name("PD")).SendKeys(userPassword);
         driver.FindElement(By.ClassName("CompanyloginButton")).Click();
         Console.WriteLine("请手动完成拖拽验证码...");
-        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(60));
+        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(600));
         wait.Until(d => d.Url == "https://ent.qpgzf.cn/CompanyHome/Main");
         Console.WriteLine("登录成功！");
     }
@@ -131,6 +142,12 @@ public class DriverSelector(
         driver.SwitchTo().Frame(iframe);
     }
 
+    private void SwitchBack()
+    {
+        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+        driver.SwitchTo().DefaultContent();
+    }
+
     private void SearchCommunity(string communityName)
     {
         var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
@@ -162,12 +179,14 @@ public class DriverSelector(
                 var floorNo = int.Parse(row.FindElement(By.XPath("./td[4]")).Text.Trim().Substring(0, 2));
                 var price = double.Parse(row.FindElement(By.XPath("./td[6]")).Text.Trim());
                 var area = double.Parse(row.FindElement(By.XPath("./td[8]")).Text.Trim());
+                var houseTypeString = row.FindElement(By.XPath("./td[9]")).Text.Trim();
+                var houseType =  EnumHelper.GetEnumValueFromDescription<HouseType>(houseTypeString);
 
                 var selectButton = row.FindElement(By.XPath("./td[1]//a"));
 
                 firstOption ??= selectButton;
 
-                if (commName == condition.CommunityName &&
+                if (commName == condition.CommunityName && houseType == condition.HouseType &&
                     (buildingNo == condition.BuildingNo || condition.BuildingNo == 0) &&
                     (floorNo == condition.FloorNo || condition.FloorNo == 0) &&
                     (price <= condition.MaxPrice || condition.MaxPrice == 0) &&
@@ -179,10 +198,15 @@ public class DriverSelector(
                     break;
                 }
 
-                if (commName == condition.CommunityName &&
+                if (commName == condition.CommunityName && houseType == condition.HouseType &&
                     (floorNo == condition.FloorNo || condition.FloorNo == 0))
                 {
                     floorMatch = selectButton;
+                }
+                
+                if (commName == condition.CommunityName && houseType == condition.HouseType)
+                {
+                    firstOption = selectButton;
                 }
             }
 
@@ -203,7 +227,7 @@ public class DriverSelector(
             if (firstOption != null)
             {
                 ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", firstOption);
-                Console.WriteLine("所有条件都不满足，选择了第一个房源");
+                Console.WriteLine("所有条件都不满足，选择了一个房源");
                 break;
             }
 
@@ -229,7 +253,24 @@ public class DriverSelector(
     {
         try
         {
+            SwitchBack();
             var confirmButton = driver.FindElement(By.XPath("//button/span[text()='确定']"));
+            ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", confirmButton);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+    
+    private void FinalConfirm()
+    {
+        try
+        {
+            var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(60));
+            var confirmButton =
+                wait.Until(ExpectedConditions.ElementToBeClickable(By.XPath("//button/span[text()='最终确认']")));
             ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", confirmButton);
         }
         catch (Exception e)
@@ -247,7 +288,7 @@ public class DriverSelector(
             Console.WriteLine("用户名、密码和cookie不能为空");
             return;
         }
-        
+
         Login(userAccount, userPassword, cookie);
         NavigateToSelection(applyerName);
         WaitUntilStartTime(startTime, cancellationToken);
@@ -272,9 +313,18 @@ public class DriverSelector(
         }
 
         ConfirmSelection();
-        Console.WriteLine("选房流程完成");
-        Console.WriteLine("按任意键退出...");
-        Console.ReadKey();
+        if (autoConfirm)
+        {
+            FinalConfirm();
+        }
+        else
+        {
+            Console.WriteLine("请手动确认选房结果");
+        }
+        
+        Console.WriteLine("选房流程完成，请自行确认相关信息");
+        // 无限等待
+        await Task.Delay(-1, cancellationToken);
     }
 
     public void Stop()

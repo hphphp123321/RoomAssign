@@ -46,7 +46,7 @@ public class HttpSelector(
             var html = await response.Content.ReadAsStringAsync();
             // 正则匹配：通过 ondblclick 中的 show 函数参数获取申请人ID，同时匹配包含申请人名称的 <td>
             var pattern =
-                $"<tr\\s+ondblclick=\"javascript:show\\('([^']+)'\\);\">[\\s\\S]*?<td>\\s*{Regex.Escape(applyerName)}\\s*</td>";
+                $@"name=""{Regex.Escape(applyerName)}""[^>]*value=""([^""]+)""";
             var match = Regex.Match(html, pattern, RegexOptions.IgnoreCase);
             if (match.Success)
             {
@@ -81,7 +81,8 @@ public class HttpSelector(
             { "IsApplyTalent", "0" },
             { "type", "1" },
             { "SearchEntity._PageSize", "500" },
-            { "SearchEntity._PageIndex", "1" }
+            { "SearchEntity._PageIndex", "1" },
+            {"SearchEntity._CommonSearchCondition", $"{communityName}"}
         };
         try
         {
@@ -145,7 +146,7 @@ public class HttpSelector(
         
         using var client = new HttpClient();
         // 将 Cookie 添加到请求头
-        client.DefaultRequestHeaders.Add("Cookie", cookie);
+        client.DefaultRequestHeaders.Add("Cookie", $"SYS_USER_COOKIE_KEY={cookie}");
 
         // 1. 通过 GET 请求获取 https://ent.qpgzf.cn/RoomAssign/Index 页面并解析申请人ID
         var applyerId = await GetApplyerId(client, applyerName);
@@ -162,7 +163,7 @@ public class HttpSelector(
         // 3. 通过发包匹配获取房间ID
         // 这里以 communityList 的第一个条件为示例
         var condition = communityList[0];
-        var roomType = "一居室"; // TODO 先固定为一居室，后续可根据需求调整
+        var roomType = condition.HouseType.GetDescription<HouseType>();
         var roomId = await GetRoomId(client, applyerId, condition.CommunityName, roomType);
         if (roomId == null)
         {
@@ -177,7 +178,7 @@ public class HttpSelector(
             if (cancellationToken.IsCancellationRequested)
                 break;
             await SelectRoomAsync(client, applyerId, roomId);
-            await Task.Delay(10, cancellationToken);
+            await Task.Delay(100, cancellationToken);
         }
 
         Console.WriteLine("发包流程完成");
