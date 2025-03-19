@@ -94,17 +94,9 @@ namespace RoomAssign
                         case OperationMode.Click:
                             Console.WriteLine("正在启动浏览器...");
                             // 根据选择的浏览器创建相应的驱动
-                            IWebDriver driver = null;
-                            Dispatcher.Invoke(() =>
-                            {
-                                driver = driverType switch
-                                {
-                                    DriverType.Chrome => new ChromeDriver(),
-                                    DriverType.Edge => new EdgeDriver(),
-                                    _ => throw new ArgumentOutOfRangeException()
-                                };
-                            });
-                            // 自动化流程（HouseSelector.Run 内部逻辑保持不变）
+                            IWebDriver driver = null!;
+                            Dispatcher.Invoke(() => { driver = GetDriver(driverType); });
+                            // 自动化流程
                             using (driver)
                             {
                                 Selector = new DriverSelector(
@@ -192,6 +184,28 @@ namespace RoomAssign
                 "Edge" => DriverType.Edge,
                 _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
             };
+        }
+
+        private IWebDriver GetDriver(DriverType driverType)
+        {
+            IWebDriver driver = null!;
+
+            switch (driverType)
+            {
+                case DriverType.Chrome:
+                    var chromeOptions = new ChromeOptions();
+                    driver = new ChromeDriver(chromeOptions);
+                    break;
+                case DriverType.Edge:
+                    var edgeOptions = new EdgeOptions();
+                    edgeOptions.AddArgument("--edge-skip-compat-layer-relaunch");
+                    driver = new EdgeDriver(edgeOptions);
+                    break;
+                default:
+                    break;
+            }
+
+            return driver;
         }
     }
 }
