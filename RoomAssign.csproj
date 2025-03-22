@@ -2,18 +2,24 @@
 
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
-        <Version>1.0.2</Version>
+        <Version>1.0.3</Version>
+        <AssemblyVersion>1.0.3</AssemblyVersion>
         <PackageId>RoomAssign</PackageId>
         <Authors>Hp</Authors>
+        <AssemblyTitle>抢房好好好</AssemblyTitle>
+        <Product>抢房好好好</Product>
         <Description>一个自动化抢租房软件</Description>
         <TargetFramework>net9.0-windows</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <UseWPF>true</UseWPF>
         <ApplicationIcon>house.ico</ApplicationIcon>
+        <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="NetSparkleUpdater.SparkleUpdater" Version="3.0.2" />
+      <PackageReference Include="NetSparkleUpdater.UI.WPF" Version="3.0.2" />
       <PackageReference Include="Selenium.Support" Version="4.28.0" />
       <PackageReference Include="Selenium.WebDriver" Version="4.28.0" />
       <PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="133.0.6943.9800" />
@@ -28,6 +34,10 @@
     <ItemGroup>
       <None Remove="house.ico" />
       <Resource Include="house.ico" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="appcast\" />
     </ItemGroup>
 
 </Project>

@@ -27,6 +27,7 @@ namespace RoomAssign
             // 将 Console 输出重定向到 LogTextBox 控件
             Console.SetOut(new TextBoxStreamWriter(LogTextBox));
         }
+        
 
         private void AddCommunity_Click(object sender, RoutedEventArgs e)
         {
