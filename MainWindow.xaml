@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:RoomAssign"
         xmlns:sys="clr-namespace:System;assembly=System.Runtime"
-        Title="抢房好好好———Ver 1.0.2   By：hp" Height="750" Width="650"
+        Title="抢房好好好  By：hp" Height="750" Width="650"
         Icon="house.ico">
     <Window.Resources>
         <!-- 转换器 -->
