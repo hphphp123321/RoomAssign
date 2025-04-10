@@ -1,5 +1,4 @@
 ﻿using OpenQA.Selenium;
-using OpenQA.Selenium.DevTools.V130.Network;
 using OpenQA.Selenium.Support.UI;
 using SeleniumExtras.WaitHelpers;
 using Cookie = OpenQA.Selenium.Cookie;
@@ -109,8 +108,7 @@ public class DriverSelector(
                     Console.WriteLine("成功进入选房页面！");
                     break;
                 }
-
-                var alertBox = driver.FindElement(By.Id("sysAlert"));
+                
                 Console.WriteLine("当前时间段无法分配房源，关闭弹窗后继续尝试...");
                 var closeButton = driver.FindElement(By.ClassName("ui-dialog-titlebar-close"));
                 ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", closeButton);

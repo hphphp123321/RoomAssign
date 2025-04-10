@@ -97,21 +97,19 @@ namespace RoomAssign
                             IWebDriver driver = null!;
                             Dispatcher.Invoke(() => { driver = GetDriver(driverType); });
                             // 自动化流程
-                            using (driver)
-                            {
-                                Selector = new DriverSelector(
-                                    driver: driver,
-                                    userAccount: userAccount,
-                                    userPassword: userPassword,
-                                    applyerName: applyerName,
-                                    communityList: communityList,
-                                    startTime: startTime,
-                                    cancellationToken: cts.Token,
-                                    clickIntervalMs: clickInterval,
-                                    cookie: cookie);
+                            Selector = new DriverSelector(
+                                driver: driver,
+                                userAccount: userAccount,
+                                userPassword: userPassword,
+                                applyerName: applyerName,
+                                communityList: communityList,
+                                startTime: startTime,
+                                cancellationToken: cts.Token,
+                                clickIntervalMs: clickInterval,
+                                cookie: cookie);
 
-                                await Selector.RunAsync();
-                            }
+                            await Selector.RunAsync();
+
 
                             break;
                         case OperationMode.Http:

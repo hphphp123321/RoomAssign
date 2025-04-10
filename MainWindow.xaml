@@ -111,12 +111,12 @@
 
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                 <Label Content="申请人姓名:" Width="80" />
-                <TextBox x:Name="ApplyerTextBox" Width="500" Text="" ToolTip="请输入申请人姓名" />
+                <TextBox x:Name="ApplyerTextBox" Width="500" Text="胡鹏" ToolTip="请输入申请人姓名" />
             </StackPanel>
 
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                 <Label Content="开始日期:" Width="80" />
-                <DatePicker x:Name="StartDatePicker" SelectedDate="2025-03-18" Width="150" />
+                <DatePicker x:Name="StartDatePicker" SelectedDate="2025-04-18" Width="150" />
                 <Label Content="时间:" Margin="10,0,0,0" />
                 <TextBox x:Name="HourTextBox" Width="30" Text="09" />
                 <TextBlock Text=":" VerticalAlignment="Center" Margin="2,0" />
