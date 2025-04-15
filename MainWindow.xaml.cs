@@ -21,7 +21,7 @@ namespace RoomAssign
             InitializeComponent();
             CommunityConditions = new ObservableCollection<HouseCondition>();
             // 添加初始一行默认数据
-            CommunityConditions.Add(new HouseCondition("正荣景苑", 0, 0, 0, 0, HouseType.OneRoom));
+            CommunityConditions.Add(new HouseCondition("正荣景苑", 0, "3-4,6", 0, 0, HouseType.OneRoom));
             CommunityDataGrid.ItemsSource = CommunityConditions;
 
             // 将 Console 输出重定向到 LogTextBox 控件
@@ -30,7 +30,7 @@ namespace RoomAssign
 
         private void AddCommunity_Click(object sender, RoutedEventArgs e)
         {
-            CommunityConditions.Add(new HouseCondition("", 0, 0, 0, 0));
+            CommunityConditions.Add(new HouseCondition("", 0, "", 0, 0));
         }
 
         private void DeleteCommunity_Click(object sender, RoutedEventArgs e)

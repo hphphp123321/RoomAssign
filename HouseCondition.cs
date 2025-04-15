@@ -16,14 +16,14 @@ public enum HouseType
 public class HouseCondition(
     string communityName,
     int buildingNo,
-    int floorNo,
+    string floorRange,
     int maxPrice,
     int leastArea,
     HouseType houseType = HouseType.OneRoom)
 {
     public string CommunityName { get; set; } = communityName;
     public int BuildingNo { get; set; } = buildingNo;
-    public int FloorNo { get; set; } = floorNo;
+    public string FloorRange { get; set; } = floorRange;
     public int MaxPrice { get; set; } = maxPrice;
     public int LeastArea { get; set; } = leastArea;
     public HouseType HouseType { get; set; } = houseType; // 默认一居室
@@ -31,7 +31,40 @@ public class HouseCondition(
 
     public override string ToString()
     {
-        return $"{CommunityName} (幢号:{BuildingNo}, 层号:{FloorNo}, 价格:{MaxPrice}, 面积:{LeastArea})";
+        return $"{CommunityName} (幢号:{BuildingNo}, 层号:{FloorRange}, 价格:{MaxPrice}, 面积:{LeastArea})";
+    }
+
+    public static List<int> ParseFloorRange(string floorRange)
+    {
+        var floors = new List<int>();
+        if (string.IsNullOrWhiteSpace(floorRange) || floorRange.Trim() == "0")
+            return floors; // 空或"0"表示不进行楼层过滤
+
+        // 按逗号分割，支持"3,4,6,9-11"格式
+        var parts = floorRange.Split(',');
+        foreach (var part in parts)
+        {
+            var trimmed = part.Trim();
+            if (trimmed.Contains("-"))
+            {
+                var bounds = trimmed.Split('-');
+                if (bounds.Length == 2 &&
+                    int.TryParse(bounds[0].Trim(), out int low) &&
+                    int.TryParse(bounds[1].Trim(), out int high))
+                {
+                    for (var i = low; i <= high; i++)
+                    {
+                        floors.Add(i);
+                    }
+                }
+            }
+            else if (int.TryParse(trimmed, out int floor))
+            {
+                floors.Add(floor);
+            }
+        }
+
+        return floors;
     }
 }
 
@@ -126,9 +159,10 @@ public static class EnumHelper
                 return attributes[0].Description;
             }
         }
+
         return name;
     }
-    
+
     public static T GetEnumValueFromDescription<T>(string description) where T : struct, Enum
     {
         Type type = typeof(T);
@@ -136,7 +170,8 @@ public static class EnumHelper
         {
             if (!field.IsSpecialName)
             {
-                var attribute = Attribute.GetCustomAttribute(field, typeof(DescriptionAttribute)) as DescriptionAttribute;
+                var attribute =
+                    Attribute.GetCustomAttribute(field, typeof(DescriptionAttribute)) as DescriptionAttribute;
                 if (attribute != null)
                 {
                     if (attribute.Description == description)
@@ -149,6 +184,7 @@ public static class EnumHelper
                 }
             }
         }
+
         throw new ArgumentException($"未能根据描述“{description}”找到对应的枚举值。", nameof(description));
     }
 }
@@ -165,8 +201,10 @@ public class EnumDescriptionConverter : IValueConverter
             {
                 return attributes[0].Description;
             }
+
             return enumValue.ToString();
         }
+
         return value;
     }
 

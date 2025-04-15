@@ -41,7 +41,7 @@ public class DriverSelector(
         }
     }
 
-    public void Login(string userAccount, string userPassword, string cookie = null)
+    private void Login(string userAccount, string userPassword, string cookie = null)
     {
         var cookieSuccess = false;
         if (!string.IsNullOrEmpty(cookie))
@@ -156,96 +156,98 @@ public class DriverSelector(
         var searchBtn = wait.Until(ExpectedConditions.ElementExists(By.Id("submitButton")));
         ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", searchBtn);
     }
-
+    
     private bool SelectBestHouse(HouseCondition condition)
+{
+    var found = false;
+    IWebElement bestMatch = null;
+    IWebElement floorMatch = null;
+    IWebElement firstOption = null;
+
+    while (!found)
     {
-        var found = false;
-        IWebElement bestMatch = null;
-        IWebElement floorMatch = null;
-        IWebElement firstOption = null;
+        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+        var table = wait.Until(ExpectedConditions.ElementExists(By.Id("common-table")));
+        var rows = driver.FindElements(By.XPath("//table[@id='common-table']/tbody/tr"));
 
-        while (!found)
+        foreach (var row in rows)
         {
-            var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
-            var table = wait.Until(ExpectedConditions.ElementExists(By.Id("common-table")));
-            var rows = driver.FindElements(By.XPath("//table[@id='common-table']/tbody/tr"));
+            var commName = row.FindElement(By.XPath("./td[2]")).Text.Trim();
+            var buildingNo = int.Parse(row.FindElement(By.XPath("./td[3]")).Text.Trim());
+            // 注意：这里提取楼层时，根据实际情况调整截取逻辑
+            var floorNoText = row.FindElement(By.XPath("./td[4]")).Text.Trim();
+            var floorNo = int.Parse(floorNoText.Substring(0, Math.Min(2, floorNoText.Length)));
+            var price = double.Parse(row.FindElement(By.XPath("./td[6]")).Text.Trim());
+            var area = double.Parse(row.FindElement(By.XPath("./td[8]")).Text.Trim());
+            var houseTypeString = row.FindElement(By.XPath("./td[9]")).Text.Trim();
+            var houseType = EnumHelper.GetEnumValueFromDescription<HouseType>(houseTypeString);
 
-            foreach (var row in rows)
+            var selectButton = row.FindElement(By.XPath("./td[1]//a"));
+
+            // 保存一个首次匹配到的房源（仅社区和房型匹配）作为备用
+            firstOption ??= selectButton;
+
+            // 使用辅助方法检查所有条件
+            if (commName == condition.CommunityName &&
+                houseType == condition.HouseType &&
+                FilterEqual(buildingNo, condition.BuildingNo) &&
+                FilterFloor(floorNo, condition.FloorRange) &&
+                FilterPrice(price, condition.MaxPrice) &&
+                FilterArea(area, condition.LeastArea))
             {
-                var commName = row.FindElement(By.XPath("./td[2]")).Text.Trim();
-                var buildingNo = int.Parse(row.FindElement(By.XPath("./td[3]")).Text.Trim());
-                var floorNo = int.Parse(row.FindElement(By.XPath("./td[4]")).Text.Trim().Substring(0, 2));
-                var price = double.Parse(row.FindElement(By.XPath("./td[6]")).Text.Trim());
-                var area = double.Parse(row.FindElement(By.XPath("./td[8]")).Text.Trim());
-                var houseTypeString = row.FindElement(By.XPath("./td[9]")).Text.Trim();
-                var houseType =  EnumHelper.GetEnumValueFromDescription<HouseType>(houseTypeString);
-
-                var selectButton = row.FindElement(By.XPath("./td[1]//a"));
-
-                firstOption ??= selectButton;
-
-                if (commName == condition.CommunityName && houseType == condition.HouseType &&
-                    (buildingNo == condition.BuildingNo || condition.BuildingNo == 0) &&
-                    (floorNo == condition.FloorNo || condition.FloorNo == 0) &&
-                    (price <= condition.MaxPrice || condition.MaxPrice == 0) &&
-                    (area >= condition.LeastArea || condition.LeastArea == 0))
-                {
-                    bestMatch = selectButton;
-                    Console.WriteLine($"找到完全匹配房源: {commName} 幢:{buildingNo} 层:{floorNo} 价格:{price} 面积:{area}");
-                    found = true;
-                    break;
-                }
-
-                if (commName == condition.CommunityName && houseType == condition.HouseType &&
-                    (floorNo == condition.FloorNo || condition.FloorNo == 0))
-                {
-                    floorMatch = selectButton;
-                }
-                
-                if (commName == condition.CommunityName && houseType == condition.HouseType)
-                {
-                    firstOption = selectButton;
-                }
-            }
-
-            if (found)
-            {
-                ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", bestMatch);
-                Console.WriteLine("成功选择完全匹配的房源");
+                bestMatch = selectButton;
+                Console.WriteLine($"找到完全匹配房源: {commName} 幢:{buildingNo} 楼层:{floorNo} 价格:{price} 面积:{area}");
+                found = true;
                 break;
             }
 
-            if (floorMatch != null)
+            // 如果仅社区、房型和楼层匹配，则记录备用
+            if (commName == condition.CommunityName &&
+                houseType == condition.HouseType &&
+                FilterFloor(floorNo, condition.FloorRange))
             {
-                ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", floorMatch);
-                Console.WriteLine("未找到完全匹配，选择了仅符合层号的房源");
-                break;
-            }
-
-            if (firstOption != null)
-            {
-                ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", firstOption);
-                Console.WriteLine("所有条件都不满足，选择了一个房源");
-                break;
-            }
-
-            try
-            {
-                var waitNext = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
-                var nextPage = waitNext.Until(ExpectedConditions.ElementToBeClickable(By.ClassName("page-next")));
-                ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", nextPage);
-                Console.WriteLine("跳转到下一页...");
-                waitNext.Until(ExpectedConditions.StalenessOf(table));
-            }
-            catch (WebDriverTimeoutException)
-            {
-                Console.WriteLine("已翻到最后一页，未找到合适的房源");
-                break;
+                floorMatch = selectButton;
             }
         }
 
-        return found;
+        if (found)
+        {
+            ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", bestMatch);
+            Console.WriteLine("成功选择完全匹配的房源");
+            break;
+        }
+
+        if (floorMatch != null)
+        {
+            ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", floorMatch);
+            Console.WriteLine("未找到完全匹配，选择了仅符合楼层条件的房源");
+            break;
+        }
+
+        if (firstOption != null)
+        {
+            ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", firstOption);
+            Console.WriteLine("所有条件都不满足，选择了一个房源作为备用");
+            break;
+        }
+
+        try
+        {
+            var waitNext = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
+            var nextPage = waitNext.Until(ExpectedConditions.ElementToBeClickable(By.ClassName("page-next")));
+            ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", nextPage);
+            Console.WriteLine("跳转到下一页...");
+            waitNext.Until(ExpectedConditions.StalenessOf(table));
+        }
+        catch (WebDriverTimeoutException)
+        {
+            Console.WriteLine("已翻到最后一页，未找到合适的房源");
+            break;
+        }
     }
+
+    return found;
+}
 
     private void ConfirmSelection()
     {
@@ -329,4 +331,34 @@ public class DriverSelector(
     {
         driver.Quit();
     }
+    
+    /// <summary>
+    /// 如果过滤值为 0，则不过滤，否则要求 actual 等于 filter。
+    /// </summary>
+    private bool FilterEqual(int actual, int filter) =>
+        filter == 0 || actual == filter;
+
+    /// <summary>
+    /// 如果最大价格为 0，则不过滤，否则要求价格不大于 maxPrice。
+    /// </summary>
+    private bool FilterPrice(double price, int maxPrice) =>
+        maxPrice == 0 || price <= maxPrice;
+
+    /// <summary>
+    /// 如果最小面积为 0，则不过滤，否则要求面积不小于 minArea。
+    /// </summary>
+    private bool FilterArea(double area, int minArea) =>
+        minArea == 0 || area >= minArea;
+
+    /// <summary>
+    /// 如果楼层过滤条件为空或 null，则不过滤，否则解析出允许的楼层后检查当前楼层是否包含在内。
+    /// </summary>
+    private bool FilterFloor(int floor, string floorRange)
+    {
+        if (string.IsNullOrWhiteSpace(floorRange))
+            return true;
+        var allowedFloors = HouseCondition.ParseFloorRange(floorRange);
+        return allowedFloors.Count == 0 || allowedFloors.Contains(floor);
+    }
+
 }

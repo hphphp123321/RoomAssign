@@ -167,7 +167,7 @@
                     <Border Width="20" Height="20" CornerRadius="10" Background="LightGray" Margin="5,0,0,0">
                         <TextBlock Text="?" HorizontalAlignment="Center" VerticalAlignment="Center"
                                    Foreground="DarkCyan"
-                                   ToolTip="小区为必填，其他如果填0则默认为不筛选" FontWeight="Bold" />
+                                   ToolTip="小区为必填，层数可以范围选择，例如2-4,6(注意要英文逗号)，层数不填即不筛选，其他如果填0则默认为不筛选" FontWeight="Bold" />
                     </Border>
                 </StackPanel>
             </GroupBox.Header>
@@ -178,7 +178,7 @@
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="小区" Binding="{Binding CommunityName}" Width="*" />
                         <DataGridTextColumn Header="幢号" Binding="{Binding BuildingNo}" Width="Auto" />
-                        <DataGridTextColumn Header="层数" Binding="{Binding FloorNo}" Width="Auto" />
+                        <DataGridTextColumn Header="层数(可范围选择)" Binding="{Binding FloorRange}" Width="Auto" />
                         <DataGridTextColumn Header="最高价格(元/月)" Binding="{Binding MaxPrice}" Width="Auto" />
                         <DataGridTextColumn Header="最小面积(m^2)" Binding="{Binding LeastArea}" Width="Auto" />
                         <DataGridTemplateColumn Header="房屋类型">
