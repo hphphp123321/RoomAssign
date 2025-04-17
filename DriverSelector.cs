@@ -1,4 +1,6 @@
 ﻿using OpenQA.Selenium;
+using OpenQA.Selenium.DevTools.V133.Debugger;
+using OpenQA.Selenium.Safari;
 using OpenQA.Selenium.Support.UI;
 using SeleniumExtras.WaitHelpers;
 using Cookie = OpenQA.Selenium.Cookie;
@@ -148,7 +150,7 @@ public class DriverSelector(
 
     private void SearchCommunity(string communityName)
     {
-        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(1));
         var searchInput =
             wait.Until(ExpectedConditions.ElementExists(By.Id("SearchEntity__CommonSearchCondition")));
         searchInput.Clear();
@@ -166,8 +168,13 @@ public class DriverSelector(
 
     while (!found)
     {
-        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+        var wait = new WebDriverWait(driver, TimeSpan.FromMilliseconds(20));
         var table = wait.Until(ExpectedConditions.ElementExists(By.Id("common-table")));
+        var tbody = driver.FindElement(By.XPath("//table[@id='common-table']/tbody"));
+
+        // var rows = new List<IWebElement>();
+
+        // 如果 tbody 下有 tr 元素，则查找所有的行
         var rows = driver.FindElements(By.XPath("//table[@id='common-table']/tbody/tr"));
 
         foreach (var row in rows)
@@ -231,19 +238,40 @@ public class DriverSelector(
             break;
         }
 
+        Console.WriteLine("11");
+
         try
         {
-            var waitNext = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
-            var nextPage = waitNext.Until(ExpectedConditions.ElementToBeClickable(By.ClassName("page-next")));
-            ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", nextPage);
-            Console.WriteLine("跳转到下一页...");
-            waitNext.Until(ExpectedConditions.StalenessOf(table));
+            // 定位到分页的 div 和当前页的链接
+            var pagingDiv = driver.FindElement(By.ClassName("paging"));
+            var currentPageElement = pagingDiv.FindElement(By.CssSelector("a[class='homepage'][class*='current']"));
+            
+            // 获取当前页的页码
+            int currentPage = int.Parse(currentPageElement.Text);
+            
+            // 获取总页数
+            var totalPagesElement = pagingDiv.FindElement(By.Id("TotalPages"));
+            int totalPages = int.Parse(totalPagesElement.Text);
+            
+            // 判断是否为最后一页
+            if (currentPage < totalPages)
+            {
+                // 如果不是最后一页，点击“下一页”按钮
+                var nextPageButton = pagingDiv.FindElement(By.ClassName("page-next"));
+                ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", nextPageButton);
+                Console.WriteLine("跳转到下一页...");
+            }
+            else
+            {
+                Console.WriteLine("已翻到最后一页，未找到合适的房源");
+                break;
+            }
         }
-        catch (WebDriverTimeoutException)
+        catch (Exception ex)
         {
-            Console.WriteLine("已翻到最后一页，未找到合适的房源");
-            break;
+            Console.WriteLine("分页操作时发生错误: " + ex.Message);
         }
+
     }
 
     return found;
@@ -302,14 +330,22 @@ public class DriverSelector(
         StartAssignRoom();
         SwitchToIframe();
 
+        bool found = false;
         foreach (var condition in communityList)
         {
             Console.WriteLine($"正在搜索 {condition.CommunityName}...");
             SearchCommunity(condition.CommunityName);
             Console.WriteLine($"开始选择 {condition.CommunityName} 的房源...");
-            var found = SelectBestHouse(condition);
+            found = SelectBestHouse(condition);
             if (found)
                 break;
+        }
+
+        if (!found){
+            Console.WriteLine("未找到所有房源");
+            // 无限等待
+            await Task.Delay(-1, cancellationToken);
+            return;
         }
 
         ConfirmSelection();
