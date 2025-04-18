@@ -1,4 +1,8 @@
-﻿# 抢房好好好
+﻿<div align="center">
+  <h1 align="center">抢房好好好</h1>
+</div>
+
+---
 
 <div align="center">
 <img src="https://raw.githubusercontent.com/hphphp123321/RoomAssign/refs/heads/simple/house.ico" 
