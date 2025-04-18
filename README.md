@@ -1,8 +1,9 @@
 ﻿# 抢房好好好
 
-<center>
-![house.ico](./house.ico)
-</center>
+<div style="text-align: center;">
+<img src="https://raw.githubusercontent.com/hphphp123321/RoomAssign/refs/heads/simple/house.ico" 
+alt="https://github.com/hphphp123321/RoomAssign/blob/simple/house.ico"/>
+</div>
 
 抢房好好好是一款基于 C# WPF 构建的自动化选房工具，主要提供两种选房模式：
 - **模拟点击模式**：利用 Selenium WebDriver 控制浏览器自动登录、选房并完成确认。
