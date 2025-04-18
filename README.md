@@ -1,6 +1,6 @@
 ﻿# 抢房好好好
 
-<div style="text-align: center;">
+<div align="center">
 <img src="https://raw.githubusercontent.com/hphphp123321/RoomAssign/refs/heads/simple/house.ico" 
 alt="https://github.com/hphphp123321/RoomAssign/blob/simple/house.ico"/>
 </div>
