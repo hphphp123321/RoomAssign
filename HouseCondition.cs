@@ -66,6 +66,21 @@ public class HouseCondition(
 
         return floors;
     }
+
+    #region 过滤方法
+
+    public static bool FilterEqual(int actual, int filter) => filter == 0 || actual == filter;
+    public static bool FilterPrice(double price, int maxPrice) => maxPrice == 0 || price <= maxPrice;
+    public static bool FilterArea(double area, int minArea) => minArea == 0 || area >= minArea;
+
+    public static bool FilterFloor(int floor, string range)
+    {
+        if (string.IsNullOrWhiteSpace(range)) return true;
+        var list = HouseCondition.ParseFloorRange(range);
+        return list.Count == 0 || list.Contains(floor);
+    }
+
+    #endregion
 }
 
 // 枚举类型，用于选择运行模式

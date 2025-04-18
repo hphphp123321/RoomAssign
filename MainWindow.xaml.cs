@@ -3,6 +3,7 @@ using OpenQA.Selenium.Edge;
 using OpenQA.Selenium.Chrome;
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -108,25 +109,24 @@ namespace RoomAssign
                                 clickIntervalMs: clickInterval,
                                 cookie: cookie);
 
-                            await Selector.RunAsync();
-
 
                             break;
                         case OperationMode.Http:
                             // 通过 Http 发包的方式进行自动化
                             Selector = new HttpSelector(
-                                applyerName: applyerName,
+                                applierName: applyerName,
                                 communityList: communityList,
                                 startTime: startTime,
                                 cancellationToken: cts.Token,
-                                clickIntervalMs: clickInterval,
+                                requestIntervalMs: clickInterval,
                                 cookie: cookie);
 
-                            await Selector.RunAsync();
                             break;
                         default:
                             throw new ArgumentOutOfRangeException();
                     }
+
+                    await Selector.RunAsync();
                 }
                 catch (Exception ex)
                 {
@@ -204,6 +204,16 @@ namespace RoomAssign
             }
 
             return driver;
+        }
+        
+        private void GitHubButton_Click(object sender, RoutedEventArgs e)
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "https://github.com/hphphp123321/RoomAssign/tree/simple",
+                UseShellExecute = true
+            };
+            Process.Start(psi);
         }
     }
 }

@@ -159,10 +159,11 @@ namespace RoomAssign
             {
                 try
                 {
-                    var btn = driver.FindElement(By.CssSelector("a[onclick='assignRoom(1)']"));
+                    var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(2));
+                    var btn = wait.Until(ExpectedConditions.ElementExists(By.CssSelector("a[onclick='assignRoom(1)']")));
+                    Thread.Sleep(50);
                     ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", btn);
                     Thread.Sleep(clickIntervalMs);
-                    var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(2));
                     var iframe = wait.Until(ExpectedConditions.ElementExists(By.Id("iframeDialog")));
                     if (iframe.GetAttribute("src").Contains("ApplyIDs"))
                     {
@@ -171,6 +172,7 @@ namespace RoomAssign
                     }
                     Console.WriteLine("当前时间段无法分配房源，关闭弹窗后继续尝试...");
                     var closeBtn = driver.FindElement(By.ClassName("ui-dialog-titlebar-close"));
+                    Thread.Sleep(50);
                     ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", closeBtn);
                     Thread.Sleep(clickIntervalMs);
                 }
@@ -207,11 +209,12 @@ namespace RoomAssign
 
         private void SearchCommunity(string community)
         {
-            var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(1));
+            var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
             var input = wait.Until(ExpectedConditions.ElementExists(By.Id("SearchEntity__CommonSearchCondition")));
             input.Clear();
             input.SendKeys(community);
             var btn = wait.Until(ExpectedConditions.ElementExists(By.Id("submitButton")));
+            Thread.Sleep(50);
             ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", btn);
         }
 
@@ -234,15 +237,22 @@ namespace RoomAssign
             IWebElement floorMatch = null;
             IWebElement firstOption = null;
 
+            var comm = string.Empty;
+            var bNo = 0;
+            var fText = string.Empty;
+            double price = 0;
+            double area = 0;
+            var typeDesc = string.Empty;
+
             foreach (var row in rows)
             {
-                var comm = row.FindElement(By.XPath("./td[2]")).Text.Trim();
-                var bNo = int.Parse(row.FindElement(By.XPath("./td[3]")).Text.Trim());
-                var fText = row.FindElement(By.XPath("./td[4]")).Text.Trim();
-                var fNo = int.Parse(fText.Substring(0, Math.Min(2, fText.Length)));
-                var price = double.Parse(row.FindElement(By.XPath("./td[6]")).Text.Trim());
-                var area = double.Parse(row.FindElement(By.XPath("./td[8]")).Text.Trim());
-                var typeDesc = row.FindElement(By.XPath("./td[9]")).Text.Trim();
+                comm = row.FindElement(By.XPath("./td[2]")).Text.Trim();
+                bNo = int.Parse(row.FindElement(By.XPath("./td[3]")).Text.Trim());
+                fText = row.FindElement(By.XPath("./td[4]")).Text.Trim();
+                var fNo = int.Parse(fText[..Math.Min(2, fText.Length)]);
+                price = double.Parse(row.FindElement(By.XPath("./td[6]")).Text.Trim());
+                area = double.Parse(row.FindElement(By.XPath("./td[8]")).Text.Trim());
+                typeDesc = row.FindElement(By.XPath("./td[9]")).Text.Trim();
                 var type = EnumHelper.GetEnumValueFromDescription<HouseType>(typeDesc);
                 var selectBtn = row.FindElement(By.XPath("./td[1]//a"));
 
@@ -250,10 +260,10 @@ namespace RoomAssign
 
                 if (comm == condition.CommunityName
                     && type == condition.HouseType
-                    && FilterEqual(bNo, condition.BuildingNo)
-                    && FilterFloor(fNo, condition.FloorRange)
-                    && FilterPrice(price, condition.MaxPrice)
-                    && FilterArea(area, condition.LeastArea))
+                    && HouseCondition.FilterEqual(bNo, condition.BuildingNo)
+                    && HouseCondition.FilterFloor(fNo, condition.FloorRange)
+                    && HouseCondition.FilterPrice(price, condition.MaxPrice)
+                    && HouseCondition.FilterArea(area, condition.LeastArea))
                 {
                     bestMatch = selectBtn;
                     break;
@@ -261,18 +271,23 @@ namespace RoomAssign
 
                 if (comm == condition.CommunityName
                     && type == condition.HouseType
-                    && FilterFloor(fNo, condition.FloorRange))
+                    && HouseCondition.FilterFloor(fNo, condition.FloorRange))
                 {
                     floorMatch = selectBtn;
                 }
             }
 
-            IWebElement toClick = bestMatch ?? floorMatch ?? firstOption;
+            var toClick = bestMatch ?? floorMatch ?? firstOption;
 
             if (toClick == null) return false;
-
+            Thread.Sleep(50);
             ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", toClick);
-            Console.WriteLine("已选择匹配房源");
+            Console.WriteLine($"已选择匹配房源：名字: {comm}, " +
+                                $"幢号: {bNo}, " +
+                                $"楼层: {fText}, " +
+                                $"价格: {price}, " +
+                                $"面积: {area}, " +
+                                $"类型: {typeDesc}");
 
             return true;
         }
@@ -281,14 +296,16 @@ namespace RoomAssign
         {
             SwitchBack();
             var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
-            var btn = wait.Until(ExpectedConditions.ElementToBeClickable(By.XPath("//button/span[text()='确定']")));
+            var btn = wait.Until(ExpectedConditions.ElementExists(By.XPath("//button/span[text()='确定']")));
+            Thread.Sleep(50);
             ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", btn);
         }
 
         private void FinalConfirm()
         {
             var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(60));
-            var btn = wait.Until(ExpectedConditions.ElementToBeClickable(By.XPath("//button/span[text()='最终确认']")));
+            var btn = wait.Until(ExpectedConditions.ElementExists(By.XPath("//button/span[text()='最终确认']")));
+            Thread.Sleep(50);
             ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", btn);
         }
 
@@ -301,7 +318,8 @@ namespace RoomAssign
                 if (msg.Contains("此房间已经被其他申请人选中"))
                 {
                     var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(2));
-                    var btn = wait.Until(ExpectedConditions.ElementToBeClickable(By.XPath("//button/span[text()='确定']")));
+                    var btn = wait.Until(ExpectedConditions.ElementExists(By.XPath("//button/span[text()='确定']")));
+                    Thread.Sleep(50);
                     ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", btn);
                     return false;
                 }
@@ -317,15 +335,6 @@ namespace RoomAssign
         {
             driver.Quit();
         }
-
-        private static bool FilterEqual(int actual, int filter) => filter == 0 || actual == filter;
-        private static bool FilterPrice(double price, int maxPrice) => maxPrice == 0 || price <= maxPrice;
-        private static bool FilterArea(double area, int minArea) => minArea == 0 || area >= minArea;
-        private static bool FilterFloor(int floor, string range)
-        {
-            if (string.IsNullOrWhiteSpace(range)) return true;
-            var list = HouseCondition.ParseFloorRange(range);
-            return list.Count == 0 || list.Contains(floor);
-        }
+        
     }
 }

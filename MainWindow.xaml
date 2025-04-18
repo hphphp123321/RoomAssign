@@ -25,8 +25,8 @@
             <Label Content="运行模式:" Width="80" />
             <ComboBox x:Name="OperationModeComboBox" Width="250"
                       ToolTip="模拟点击模式可以看到具体的操作，在最后一步确认需要手动点击，成功率较高，但是速度较发包模式慢；发包模式理论速度最快，但是需要cookie，并且不保证成功率">
-                <ComboBoxItem Content="模拟点击" IsSelected="True" />
-                <ComboBoxItem Content="Http发包" />
+                <ComboBoxItem Content="模拟点击" />
+                <ComboBoxItem Content="Http发包" IsSelected="True" />
             </ComboBox>
             <!-- 圆形问号图标，带 ToolTip -->
             <Border Width="20" Height="20" CornerRadius="10" Background="LightGray" Margin="5,0,0,0">
@@ -79,7 +79,7 @@
 
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                 <Label Content="用户密码:" Width="80" />
-                <PasswordBox x:Name="PasswordBox" Width="500" Password="111111" ToolTip="请输入用户密码">
+                <PasswordBox x:Name="PasswordBox" Width="500" Password="" ToolTip="请输入用户密码">
                     <PasswordBox.Style>
                         <Style TargetType="PasswordBox">
                             <Setter Property="IsEnabled" Value="True" />
@@ -98,7 +98,7 @@
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5" VerticalAlignment="Center">
                 <Label Content="Cookie:" Width="80" />
                 <TextBox x:Name="CookieTextBox" Width="500"
-                         Text=""
+                         Text="SYS_USER_COOKIE_KEY=DuAZwOAf/NLjgFDzEGln40YCqW1fow8gYHTd64HiogeCyqK3B2HgXg=="
                          ToolTip="请输入Cookie(Http发包模式必填), 格式为类似为SYS_USER_COOKIE_KEY=8Yps29EmOSqb6BvirMo4gVucZmbeKLZMU+vy3RtDKM3xMzdt/zNN6Q== " />
                 <!-- 圆形问号图标，带 ToolTip -->
                 <Border Width="20" Height="20" CornerRadius="10" Background="LightGray"
@@ -111,7 +111,7 @@
 
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                 <Label Content="申请人姓名:" Width="80" />
-                <TextBox x:Name="ApplyerTextBox" Width="500" Text="胡鹏" ToolTip="请输入申请人姓名" />
+                <TextBox x:Name="ApplyerTextBox" Width="500" Text="高少炜" ToolTip="请输入申请人姓名" />
             </StackPanel>
 
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
@@ -219,6 +219,23 @@
             <Button x:Name="StartButton" Content="开始抢房" Height="30" Width="100" Click="StartButton_Click" Margin="5" />
             <Button x:Name="StopButton" Content="停止抢房" Height="30" Width="100" Click="StopButton_Click" Margin="5"
                     IsEnabled="False" />
+            
+            <!-- 新增的 GitHub 按钮 -->
+            <Button x:Name="GitHubButton"
+                    Height="30"
+                    Padding="5,0"
+                    Click="GitHubButton_Click"
+                    VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Viewbox Width="16" Height="16" Stretch="Uniform">
+        <Canvas Width="24" Height="24">
+          <Path
+            Data="M12 1C5.9225 1 1 5.9225 1 12C1 16.8675 4.14875 20.9787 8.52125 22.4362C9.07125 22.5325 9.2775 22.2025 9.2775 21.9137C9.2775 21.6525 9.26375 20.7862 9.26375 19.865C6.5 20.3737 5.785 19.1912 5.565 18.5725C5.44125 18.2562 4.905 17.28 4.4375 17.0187C4.0525 16.8125 3.5025 16.3037 4.42375 16.29C5.29 16.2762 5.90875 17.0875 6.115 17.4175C7.105 19.0812 8.68625 18.6137 9.31875 18.325C9.415 17.61 9.70375 17.1287 10.02 16.8537C7.5725 16.5787 5.015 15.63 5.015 11.4225C5.015 10.2262 5.44125 9.23625 6.1425 8.46625C6.0325 8.19125 5.6475 7.06375 6.2525 5.55125C6.2525 5.55125 7.17375 5.2625 9.2775 6.67875C10.1575 6.43125 11.0925 6.3075 12.0275 6.3075C12.9625 6.3075 13.8975 6.43125 14.7775 6.67875C16.8813 5.24875 17.8025 5.55125 17.8025 5.55125C18.4075 7.06375 18.0225 8.19125 17.9125 8.46625C18.6138 9.23625 19.04 10.2125 19.04 11.4225C19.04 15.6437 16.4688 16.5787 14.0213 16.8537C14.42 17.1975 14.7638 17.8575 14.7638 18.8887C14.7638 20.36 14.75 21.5425 14.75 21.9137C14.75 22.2025 14.9563 22.5462 15.5063 22.4362C19.8513 20.9787 23 16.8537 23 12C23 5.9225 18.0775 1 12 1Z"
+            Fill="Black"/>
+        </Canvas>
+      </Viewbox>
+                </StackPanel>
+            </Button>
         </StackPanel>
     </Grid>
 </Window>
